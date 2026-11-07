@@ -1,0 +1,46 @@
+name: Daily Timeline Build
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          
+      - name: Fetch Raw Data
+        run: |
+          mkdir -p raw_data
+          # Example source - replace with your preferred URLs
+          curl -L "https://iptv-org.github.io/epg/guides/us/pluto.tv.epg.xml" -o raw_data/source1.xml
+          
+      - name: Install Dependencies
+        run: pip install -r scripts/requirements.txt
+
+      - name: Compile SQLite Database
+        run: python scripts/build_sqlite.py
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v4
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: './public'
+
+      - name: Deploy to GitHub Pages
+        uses: actions/deploy-pages@v4
