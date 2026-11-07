@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Timeline Viewer</title>
+    <script src="https://cdn.jsdelivr.net/npm/sql.js-httpvfs@0.8.12/dist/sql.js-httpvfs.js"></script>
+    <style>
+        body { font-family: system-ui, sans-serif; background: #111; color: #fff; padding: 20px;}
+        button { background: #333; color: #fff; border: 1px solid #555; padding: 10px 15px; cursor: pointer; border-radius: 4px; }
+        button:hover { background: #444; }
+        pre { background: #222; padding: 15px; border-radius: 5px; overflow-x: auto; border: 1px solid #333; }
+    </style>
+</head>
+<body>
+    <h2>Serverless Timeline Node</h2>
+    <button onclick="fetchTimeline()">Query Database Chunk</button>
+    <pre id="output">Waiting for query...</pre>
+
+    <script>
+        async function fetchTimeline() {
+            const output = document.getElementById("output");
+            output.textContent = "Fetching via HTTP Range Request...";
+            
+            try {
+                const workerUrl = "https://cdn.jsdelivr.net/npm/sql.js-httpvfs@0.8.12/dist/sqlite.worker.js";
+                const wasmUrl = "https://cdn.jsdelivr.net/npm/sql.js-httpvfs@0.8.12/dist/sql-wasm.wasm";
+                
+                const worker = await createDbWorker(
+                    [
+                        {
+                            from: "inline",
+                            config: {
+                                serverMode: "full",
+                                url: "/timeline.sqlite3", 
+                                requestChunkSize: 4096, 
+                            }
+                        }
+                    ],
+                    workerUrl,
+                    wasmUrl
+                );
+
+                const result = await worker.db.query(`
+                    SELECT c.name, p.title, p.start_time 
+                    FROM programs p
+                    JOIN channels c ON p.channel_id = c.id
+                    LIMIT 10;
+                `);
+
+                output.textContent = JSON.stringify(result, null, 2);
+            } catch (error) {
+                output.textContent = "Error: " + error.message + "\n\n(Make sure the GitHub Action has run successfully first!)";
+            }
+        }
+    </script>
+</body>
+</html>
