@@ -10,9 +10,17 @@ permissions:
   pages: write
   id-token: write
 
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v4
@@ -21,15 +29,21 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
+
       - name: Fetch Raw Data
+        env:
+          FEED_URL: https://iptv-org.github.io/epg/guides/us/pluto.tv.epg.xml
         run: |
           mkdir -p raw_data
-          # Example source - replace with your preferred URLs
-          curl -L "https://iptv-org.github.io/epg/guides/us/pluto.tv.epg.xml" -o raw_data/source1.xml
-          
+          curl --fail --location --show-error \
+            "$FEED_URL" \
+            -o raw_data/source1.xml
+
       - name: Install Dependencies
         run: pip install -r scripts/requirements.txt
+
+      - name: Validate EPG Feed
+        run: python scripts/validate_epg.py raw_data/source1.xml
 
       - name: Compile SQLite Database
         run: python scripts/build_sqlite.py
@@ -43,4 +57,5 @@ jobs:
           path: './public'
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
