@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<tv>
+  <programme channel="fixture-channel" start="20260101000000" stop="20260101010000">
+    <title>Fixture Programme 1</title>
+    <desc>Declared before its channel to verify deferred reference validation.</desc>
+  </programme>
+
+  <channel id="fixture-channel">
+    <display-name>Fixture Channel</display-name>
+    <icon src="https://example.com/fixture-channel.png"/>
+  </channel>
+
+  <programme channel="fixture-channel" start="20260101020000" stop="20260101030000">
+    <title>Fixture Programme 2</title>
+    <desc>Uses timestamps without timezone offsets.</desc>
+  </programme>
+
+  <programme channel="fixture-channel" start="20260101040000 +0200" stop="20260101050000 +0200">
+    <title>Fixture Programme 3</title>
+    <desc>Uses matching timezone offsets on start and stop.</desc>
+  </programme>
+</tv>

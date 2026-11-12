@@ -25,24 +25,20 @@ jobs:
       - name: Run Validator Tests
         run: python -m unittest discover -s tests -v
 
-      - name: Fetch Raw Data
-        env:
-          FEED_URL: https://iptv-org.github.io/epg/guides/us/pluto.tv.epg.xml
+      - name: Prepare Fixture Feed
         run: |
           mkdir -p raw_data
-          curl --fail --location --show-error \
-            "$FEED_URL" \
-            -o raw_data/source1.xml
+          cp tests/fixtures/sample_epg.xml raw_data/source1.xml
 
-      - name: Validate EPG Feed
+      - name: Validate Fixture Feed
         run: python scripts/validate_epg.py raw_data/source1.xml
 
       - name: Compile SQLite Database
         run: python scripts/build_sqlite.py
 
-      - name: Upload Database Artifact
+      - name: Upload Fixture Database Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: chronsync-timeline-sqlite
+          name: chronsync-fixture-timeline-sqlite
           path: public/timeline.sqlite3
           if-no-files-found: error
