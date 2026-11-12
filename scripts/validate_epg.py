@@ -15,7 +15,7 @@ def fail(message: str) -> None:
     raise SystemExit(1)
 
 
-def parse_xmltv_timestamp(value: str, field: str) -> datetime:
+def parse_xmltv_timestamp(value: str, field: str) -> tuple[datetime, bool]:
     match = TIMESTAMP_PATTERN.match(value.strip())
     if not match:
         fail(f"invalid XMLTV timestamp in {field}: {value!r}")
@@ -35,7 +35,7 @@ def parse_xmltv_timestamp(value: str, field: str) -> datetime:
         except ValueError as error:
             fail(f"invalid timezone offset in {field}: {value!r}: {error}")
 
-    return parsed
+    return parsed, offset is not None
 
 
 def validate(path: Path) -> None:
@@ -59,6 +59,8 @@ def validate(path: Path) -> None:
                 channel_id = (element.get("id") or "").strip()
                 if not channel_id:
                     fail("a channel entry has no usable id")
+                if channel_id in channel_ids:
+                    fail(f"duplicate channel id: {channel_id!r}")
 
                 channel_ids.add(channel_id)
                 channel_count += 1
@@ -73,8 +75,15 @@ def validate(path: Path) -> None:
                 if not start or not stop:
                     fail("a programme entry is missing start or stop")
 
-                start_time = parse_xmltv_timestamp(start, "start")
-                stop_time = parse_xmltv_timestamp(stop, "stop")
+                start_time, start_has_offset = parse_xmltv_timestamp(start, "start")
+                stop_time, stop_has_offset = parse_xmltv_timestamp(stop, "stop")
+
+                if start_has_offset != stop_has_offset:
+                    fail(
+                        "programme start and stop timestamps must both include "
+                        "or both omit a timezone offset: "
+                        f"channel={channel_ref!r}, start={start!r}, stop={stop!r}"
+                    )
 
                 if stop_time <= start_time:
                     fail(
