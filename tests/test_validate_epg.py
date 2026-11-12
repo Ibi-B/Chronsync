@@ -1,7 +1,8 @@
+import io
 import tempfile
 import unittest
+from contextlib import redirect_stderr
 from pathlib import Path
-from unittest.mock import patch
 
 from scripts.validate_epg import validate
 
@@ -14,13 +15,13 @@ class ValidateEpgTests(unittest.TestCase):
             validate(path)
 
     def assert_validation_fails(self, xml: str, expected: str) -> None:
-        with self.assertRaises(SystemExit) as context:
-            self.write_and_validate(xml)
+        stderr = io.StringIO()
+        with redirect_stderr(stderr):
+            with self.assertRaises(SystemExit) as context:
+                self.write_and_validate(xml)
 
         self.assertEqual(context.exception.code, 1)
-        with patch("sys.stderr") as stderr:
-            self.write_and_validate(xml)
-            self.assertIn(expected, stderr.write.call_args[0][0])
+        self.assertIn(expected, stderr.getvalue())
 
     def test_accepts_timestamps_without_offsets(self) -> None:
         self.write_and_validate(
